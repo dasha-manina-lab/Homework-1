@@ -1,0 +1,15 @@
+global:
+  scrape_interval: 5s
+
+scrape_configs:
+  - job_name: 'student-clicker'
+    static_configs:
+      - targets: ['clicker:5000']
+
+  - job_name: 'cadvisor'
+    static_configs:
+      - targets: ['cadvisor:8080']
+
+  - job_name: 'node'
+    static_configs:
+      - targets: ['node-exporter:9100']
