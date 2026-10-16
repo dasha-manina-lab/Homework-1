@@ -14,7 +14,7 @@
 | Grafana (дашборд «Student Clicker») | `https://organic-space-cod-wrjwgrqpvjgv2vg-3000.app.github.dev/` |
 | Prometheus | `https://organic-space-cod-wrjwgrqpvjgv2vg-9090.app.github.dev/` |
 
-Grafana открывается без входа, в режиме просмотра. Вход администратора: `admin` / `password`.
+Grafana открывается без входа, в режиме просмотра. Вход администратора: `admin` / `passd2a0s0wen239J`.
 
 ## Быстрый запуск из исходников
 
