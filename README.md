@@ -8,11 +8,11 @@
 
 | Что | Ссылка |
 |---|---|
-| Приложение (интерфейс) | `<ССЫЛКА НА ПОРТ 5000>` |
-| Health check | `<ССЫЛКА НА ПОРТ 5000>/health` |
-| Метрики приложения | `<ССЫЛКА НА ПОРТ 5000>/metrics` |
-| Grafana (дашборд «Student Clicker») | `<ССЫЛКА НА ПОРТ 3000>` |
-| Prometheus | `<ССЫЛКА НА ПОРТ 9090>` |
+| Приложение (интерфейс) | `https://organic-space-cod-wrjwgrqpvjgv2vg-5000.app.github.dev/` |
+| Health check | `https://organic-space-abc123-5000.app.github.dev/health` |
+| Метрики приложения | `https://organic-space-abc123-5000.app.github.dev/metrics` |
+| Grafana (дашборд «Student Clicker») | `https://organic-space-cod-wrjwgrqpvjgv2vg-3000.app.github.dev/` |
+| Prometheus | `https://organic-space-cod-wrjwgrqpvjgv2vg-9090.app.github.dev/` |
 
 Grafana открывается без входа, в режиме просмотра. Вход администратора: `admin` / `admin`.
 
