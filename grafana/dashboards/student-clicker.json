@@ -26,11 +26,12 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "up{job=\"student-clicker\"}",
+          "expr": "max(up{job=\"student-clicker\"})",
           "datasource": {
             "type": "prometheus",
             "uid": "prometheus"
-          }
+          },
+          "legendFormat": "app"
         }
       ],
       "fieldConfig": {
@@ -85,7 +86,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "increase(student_page_visits_total[1h])",
+          "expr": "round(increase(student_page_visits_total[1h]))",
           "datasource": {
             "type": "prometheus",
             "uid": "prometheus"
@@ -94,7 +95,16 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "none"
+          "unit": "none",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
         },
         "overrides": []
       },
@@ -117,7 +127,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "increase(student_clicks_total[1h])",
+          "expr": "round(increase(student_clicks_total[1h]))",
           "datasource": {
             "type": "prometheus",
             "uid": "prometheus"
@@ -126,7 +136,16 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "none"
+          "unit": "none",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
         },
         "overrides": []
       },
@@ -157,7 +176,17 @@
         }
       ],
       "fieldConfig": {
-        "defaults": {},
+        "defaults": {
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
         "overrides": []
       },
       "options": {}
@@ -188,7 +217,16 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "bytes"
+          "unit": "bytes",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
         },
         "overrides": []
       },
@@ -260,7 +298,7 @@
     },
     {
       "id": 8,
-      "title": "CPU контейнера clicker",
+      "title": "CPU приложения",
       "type": "timeseries",
       "datasource": {
         "type": "prometheus",
@@ -275,12 +313,21 @@
       "targets": [
         {
           "refId": "A",
+          "expr": "rate(process_cpu_seconds_total{job=\"student-clicker\"}[1m])",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "legendFormat": "процесс приложения"
+        },
+        {
+          "refId": "B",
           "expr": "rate(container_cpu_usage_seconds_total{name=\"student-clicker\"}[1m])",
           "datasource": {
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "legendFormat": "CPU clicker"
+          "legendFormat": "контейнер (cAdvisor)"
         }
       ],
       "fieldConfig": {
@@ -293,7 +340,7 @@
     },
     {
       "id": 9,
-      "title": "Память: контейнер clicker (потребляется)",
+      "title": "Память приложения (потребляется)",
       "type": "timeseries",
       "datasource": {
         "type": "prometheus",
@@ -308,12 +355,21 @@
       "targets": [
         {
           "refId": "A",
+          "expr": "process_resident_memory_bytes{job=\"student-clicker\"}",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "legendFormat": "процесс приложения"
+        },
+        {
+          "refId": "B",
           "expr": "container_memory_usage_bytes{name=\"student-clicker\"}",
           "datasource": {
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "legendFormat": "clicker"
+          "legendFormat": "контейнер (cAdvisor)"
         }
       ],
       "fieldConfig": {

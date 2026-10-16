@@ -1,0 +1,20 @@
+services:
+  clicker:
+    network_mode: host
+    ports: !reset []
+  prometheus:
+    network_mode: host
+    ports: !reset []
+    volumes:
+      - ./prometheus.codespaces.yml:/etc/prometheus/prometheus.yml:ro
+      - prom_data:/prometheus
+  grafana:
+    network_mode: host
+    ports: !reset []
+    volumes:
+      - ./grafana/provisioning-codespaces/datasources:/etc/grafana/provisioning/datasources:ro
+  cadvisor:
+    network_mode: host
+    command: ["-logtostderr", "-port=8081"]
+  node-exporter:
+    network_mode: host
