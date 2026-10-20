@@ -4,17 +4,33 @@
 
 ## Ссылки для проверки
 
-Приложение работает в GitHub Codespaces. Ссылки действуют, пока Codespace запущен.
-
 | Что | Ссылка |
 |---|---|
-| Приложение (интерфейс) | `https://organic-space-cod-wrjwgrqpvjgv2vg-5000.app.github.dev/` |
-| Health check | `https://organic-space-abc123-5000.app.github.dev/health` |
-| Метрики приложения | `https://organic-space-abc123-5000.app.github.dev/metrics` |
-| Grafana (дашборд «Student Clicker») | `https://organic-space-cod-wrjwgrqpvjgv2vg-3000.app.github.dev/` |
-| Prometheus | `https://organic-space-cod-wrjwgrqpvjgv2vg-9090.app.github.dev/` |
+| Приложение (интерфейс) | https://student-clicker.onrender.com |
+| Health check | https://student-clicker.onrender.com/health |
+| Метрики приложения | https://student-clicker.onrender.com/metrics |
+| Grafana (дашборд «Student Clicker») | https://organic-space-cod-wrjwgrqpvjgv2vg-3000.app.github.dev/ |
+| Prometheus | https://organic-space-cod-wrjwgrqpvjgv2vg-9090.app.github.dev/ |
 
-Grafana открывается без входа, в режиме просмотра. Вход администратора: `admin` / `passd2a0s0wen239J`.
+Что нужно знать при проверке:
+
+- **Приложение** работает на Render (бесплатный план). После 15 минут без запросов сервис засыпает, первый заход тогда занимает до минуты.
+- **Grafana и Prometheus** запущены в GitHub Codespaces и работают, пока он включён. Если ссылка не открывается, Codespace остановлен: напишите мне, и я его запущу.
+- Grafana открывается без входа, в режиме просмотра. Дашборд находится в меню **Dashboards → Student Clicker**.
+- Панели «память хоста» и «диск хоста» показывают машину, где запущен мониторинг (Codespace), а не Render.
+
+## Как всё устроено
+
+```
+git push (main)
+   │
+   ├─► GitHub Actions: тест → сборка образа → GHCR (артефакт)
+   │
+   └─► Render: сборка по Dockerfile → приложение (https://student-clicker.onrender.com)
+                                          ▲
+                                          │ метрики каждые 10 секунд
+                       Codespaces: Prometheus ──► Grafana (дашборд)
+```
 
 ## Быстрый запуск из исходников
 
@@ -38,15 +54,17 @@ docker compose up --build
 | Prometheus | http://localhost:9090 |
 | Grafana | http://localhost:3000 (дашборд «Student Clicker») |
 
-### Запуск в GitHub Codespaces
+В этом режиме всё работает локально: приложение, Prometheus, Grafana, cAdvisor и node-exporter. Файл `prometheus.yml` собирает метрики с контейнера `clicker` внутри сети compose.
 
-В Codespaces не работает сеть между контейнерами: они не видят друг друга по именам. Поэтому там используется дополнительный файл, который запускает контейнеры в сети хоста:
+### Запуск мониторинга в GitHub Codespaces
+
+В Codespaces не работает сеть между контейнерами: они не видят друг друга по именам. Поэтому там используется дополнительный файл, который запускает контейнеры в сети хоста. Приложение при этом берётся с Render, поэтому локальный контейнер `clicker` не запускается:
 
 ```bash
-docker compose -f docker-compose.yml -f docker-compose.codespaces.yml up -d --build
+docker compose -f docker-compose.yml -f docker-compose.codespaces.yml up -d prometheus grafana node-exporter cadvisor
 ```
 
-На обычном компьютере или сервере достаточно основной команды `docker compose up --build`.
+Файл `prometheus.codespaces.yml` собирает метрики приложения с адреса на Render, а метрики хоста берёт у node-exporter и cAdvisor через `localhost`. После запуска нужно открыть порты 3000 и 9090 (Public) во вкладке «Порты».
 
 ## Состав проекта
 
@@ -56,8 +74,8 @@ docker compose -f docker-compose.yml -f docker-compose.codespaces.yml up -d --bu
 | `Dockerfile` | Описание контейнера |
 | `docker-compose.yml` | Приложение, Prometheus, Grafana, cAdvisor, node-exporter |
 | `docker-compose.codespaces.yml` | Добавка для запуска в Codespaces (сеть хоста) |
-| `prometheus.yml` | Что и как часто собирает Prometheus |
-| `prometheus.codespaces.yml` | То же для Codespaces (адреса через `localhost`) |
+| `prometheus.yml` | Сбор метрик при локальном запуске |
+| `prometheus.codespaces.yml` | Сбор метрик в Codespaces (приложение на Render) |
 | `grafana/` | Источник данных и готовый дашборд, подхватываются автоматически |
 | `scripts/build.sh` | Скрипт сборки образа |
 | `scripts/deploy.sh` | Скрипт деплоя на сервере |
@@ -70,29 +88,19 @@ docker compose -f docker-compose.yml -f docker-compose.codespaces.yml up -d --bu
 
 - Клик по студенту даёт XP. Накопленный XP повышает уровень (от абитуриента до PhD).
 - В магазине можно купить улучшения: кофе и ноутбук дают XP в секунду, учебник усиливает клик.
-- Прогресс сохраняется в файл `/data/state.json` в томе `clicker_data`. Он переживает перезапуск контейнера.
+- Прогресс сохраняется в файл `/data/state.json` в томе `clicker_data`. При запуске через compose он переживает перезапуск контейнера. На бесплатном плане Render постоянного диска нет, поэтому там прогресс сбрасывается при перезапуске сервиса.
 - Приложение запускается через gunicorn с одним воркером: состояние игры хранится в памяти процесса.
 
 ## CI/CD: как это работает
 
 1. **Исходники** лежат в git. Разработчик делает `git push` в ветку `main`.
-2. **Сборка и проверка (CI).** Пайплайн ставит зависимости и запускает smoke-тест: `/health`, главная страница, клик, наличие метрик.
+2. **Сборка и проверка (CI).** Пайплайн GitHub Actions ставит зависимости и запускает smoke-тест: `/health`, главная страница, клик, наличие метрик.
 3. **Артефакт.** Пайплайн собирает Docker-образ и сохраняет его в реестре GitHub (GHCR) с двумя тегами: `latest` и хэш коммита. Хэш позволяет откатиться на любую версию. Образ виден в разделе Packages репозитория.
-4. **Деплой (CD).** Пайплайн заходит на сервер по SSH и запускает `scripts/deploy.sh`.
-5. **На сервере.** `deploy.sh` скачивает новый образ из реестра, перезапускает контейнеры и проверяет `/health`. Если приложение не отвечает, скрипт завершается с ошибкой и показывает логи.
-6. **Сохранение.** Данные лежат в Docker-томах: прогресс игры (`clicker_data`), метрики (`prom_data`), настройки Grafana (`grafana_data`). После деплоя и перезапуска они не теряются.
+4. **Деплой (CD).** Render следит за веткой `main`: после push он собирает образ по `Dockerfile` и выкатывает новую версию приложения.
+5. **Деплой на свой сервер.** Для обычного сервера в репозитории есть скрипт `scripts/deploy.sh`: он скачивает образ из реестра, перезапускает контейнеры и проверяет `/health`. В пайплайне этот шаг (job `deploy`, запуск по SSH) выключен и показывается как skipped. Чтобы включить его, нужно: выполнить на сервере `scripts/server-setup.sh` и заполнить `.env` (см. `.env.example`), добавить секреты репозитория `SERVER_HOST`, `SERVER_USER`, `SERVER_SSH_KEY` и создать переменную `DEPLOY_ENABLED` со значением `true`.
+6. **Сохранение.** При запуске через compose данные лежат в Docker-томах: прогресс игры (`clicker_data`), метрики (`prom_data`), настройки Grafana (`grafana_data`). После перезапуска они не теряются.
 
-Изменить приложение просто: правим код, делаем push, пайплайн собирает новую версию образа.
-
-### Состояние деплоя
-
-Выделенного сервера для проекта нет, поэтому шаг деплоя по умолчанию выключен: job `deploy` пропускается (статус skipped), а `build` проходит полностью. Приложение и мониторинг показываются в Codespaces.
-
-Скрипты деплоя готовы. Чтобы включить шаг деплоя на сервере, нужно:
-
-1. Выполнить на сервере `scripts/server-setup.sh`, заполнить `.env` (см. `.env.example`).
-2. Добавить секреты репозитория: `SERVER_HOST`, `SERVER_USER`, `SERVER_SSH_KEY`.
-3. Создать переменную репозитория `DEPLOY_ENABLED` со значением `true`.
+Изменить приложение просто: правим код, делаем push, пайплайн проверяет и собирает образ, а Render выкатывает новую версию.
 
 ## Метрики
 
@@ -106,12 +114,12 @@ docker compose -f docker-compose.yml -f docker-compose.codespaces.yml up -d --bu
 
 Служебные запросы `/metrics` и `/health` в счётчик запросов не попадают.
 
-## Структура сервисов
+## Сервисы
 
-| Сервис | Порт | Назначение |
-|---|---|---|
-| `clicker` | 5000 | Приложение и метрики |
-| `prometheus` | 9090 | Сбор и хранение метрик |
-| `grafana` | 3000 | Дашборд |
-| `cadvisor` | 8080 (в Codespaces 8081) | Метрики контейнеров |
-| `node-exporter` | 9100 | Метрики хоста |
+| Сервис | Порт | Где работает | Назначение |
+|---|---|---|---|
+| `clicker` | 5000 | Render (локально: compose) | Приложение и метрики |
+| `prometheus` | 9090 | Codespaces (локально: compose) | Сбор и хранение метрик |
+| `grafana` | 3000 | Codespaces (локально: compose) | Дашборд |
+| `cadvisor` | 8080 (в Codespaces 8081) | Codespaces (локально: compose) | Метрики контейнеров |
+| `node-exporter` | 9100 | Codespaces (локально: compose) | Метрики хоста |
