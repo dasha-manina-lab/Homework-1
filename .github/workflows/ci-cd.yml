@@ -57,11 +57,8 @@ jobs:
     needs: build
     if: ${{ vars.DEPLOY_ENABLED == 'true' }}
     runs-on: ubuntu-24.04
+    concurrency: deploy
     steps:
-      - name: Деплой по SSH
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.SERVER_HOST }}
-          username: ${{ secrets.SERVER_USER }}
-          key: ${{ secrets.SERVER_SSH_KEY }}
-          script: cd ~/student-clicker && ./scripts/deploy.sh
+      - name: Запуск деплоя на Render
+        run: |
+          curl -fsS -X POST "${{ secrets.RENDER_DEPLOY_HOOK_URL }}&imgURL=${{ env.IMAGE }}:${{ github.sha }}"
